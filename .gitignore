@@ -1,0 +1,17 @@
+.DS_Store
+.AppleDouble
+.LSOverride
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+Thumbs.db
+ehthumbs.db
+node_modules/
+pnpm-lock.yaml
+*.log
+.vscode/*
+.env
+output/debug_output.json

@@ -31,9 +31,23 @@
 
 ### 1. 准备数据文件
 
-准备一个符合格式的 JSON 文件（参见下方"数据格式"章节）。
+将符合格式的 JSON 文件（参见下方"数据格式"章节）放入节点目录的 `data` 文件夹中：
 
-### 2. 连接节点
+```
+ComfyUI/
+└── custom_nodes/
+    └── comfyui-character-tag-selector/
+        └── data/
+            └── your_game_characters.json
+```
+
+节点会自动扫描 `data` 目录下的所有 JSON 文件。
+
+### 2. 使用节点
+
+在 ComfyUI 中添加"Character Tag Selector"节点，从下拉列表中选择要使用的 JSON 文件。
+
+### 3. 连接节点
 
 将输出连接到其他节点（如文本框、提示词节点等）
 
@@ -54,20 +68,29 @@
 
 | 输出类型 | 结果 |
 |---------|------|
-| Danbooru标签 (推荐) | `raiden_shogun_(genshin_impact)` |
-| 简化标签 | `raiden_shogun` |
+| Danbooru标签 | `raiden_shogun_(genshin_impact)` |
 | 英文自然语言 | `Raiden Shogun from 原神` |
-| 中英混合 | `雷电将军 (Raiden Shogun), 原神` |
-| 仅中文名 | `雷电将军` |
-| 仅英文名 | `Raiden Shogun` |
+| 中文自然语言 | `雷电将军来自原神` |
+| 中文名 + 作品名 | `雷电将军, 原神` |
+
+**额外输出**：节点会自动获取并显示角色的预览图（从 `icon_url` 字段加载），方便选择时预览。
 
 ## 节点参数说明
 
 | 参数 | 类型 | 范围 | 说明 |
 |------|------|------|------|
-| json_file | STRING | - | JSON 文件的完整路径 |
+| json_file | 下拉选择 | - | 从 data 目录中选择 JSON 文件 |
 | character_index | INT | 0-9999 | 角色在数组中的索引位置（从0开始） |
-| output_type | 下拉选择 | 6种格式 | 选择输出标签的格式 |
+| output_type | 下拉选择 | 4种格式 | 选择输出标签的格式 |
+
+## 节点输出说明
+
+节点提供两个输出：
+
+| 输出 | 类型 | 说明 |
+|------|------|------|
+| text | STRING | 根据选择的格式生成的角色标签文本 |
+| preview_image | IMAGE | 角色预览图（从icon_url自动下载） |
 
 ## 数据格式
 
