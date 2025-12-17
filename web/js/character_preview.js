@@ -11,7 +11,8 @@ async function loadCharacterData() {
 
     try {
         // 从data目录加载JSON文件
-        const response = await fetch('../data/genshin_impact_characters-en-cn.json');
+        const dataUrl = new URL('../data/genshin_impact_characters-en-cn.json', import.meta.url);
+        const response = await fetch(dataUrl);
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
