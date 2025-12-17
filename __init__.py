@@ -1,0 +1,13 @@
+"""
+ComfyUI Custom Nodes - Character Tag Selector
+角色标签选择器自定义节点包
+"""
+
+from .character_tag_selector import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
+
+__all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
+
+# 节点信息
+WEB_DIRECTORY = "./js"
+NODE_CLASS_MAPPINGS = NODE_CLASS_MAPPINGS
+NODE_DISPLAY_NAME_MAPPINGS = NODE_DISPLAY_NAME_MAPPINGS
