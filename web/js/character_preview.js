@@ -77,7 +77,11 @@ app.registerExtension({
             img.crossOrigin = "anonymous"; // Ensure CORS compliance
             img.onload = () => {
                 // When this specific image finishes processing (even from cache), force a redraw
+                console.log("Main img.onload fired");
                 app.graph.setDirtyCanvas(true, true);
+            };
+            img.onerror = (e) => {
+                console.error("Main img.onerror fired:", e);
             };
             Object.assign(img.style, {
                 width: "100%",
@@ -112,6 +116,12 @@ app.registerExtension({
             // 添加自定义绘制
             const onDrawForeground = this.onDrawForeground;
             this.onDrawForeground = function (ctx) {
+                console.log("state", {
+                    src: img.src,
+                    complete: img.complete,
+                    naturalWidth: img.naturalWidth,
+                    naturalHeight: img.naturalHeight
+                });
                 const r = onDrawForeground?.apply?.(this, arguments);
 
                 // 在节点底部绘制提示或图片
@@ -162,15 +172,8 @@ app.registerExtension({
                 tempImg.onload = () => {
                     console.log("tempImg loaded successfully:", iconUrl);
                     img.src = iconUrl;
-                    // We don't strictly need setDirtyCanvas here because img.onload (above) will handle it,
-                    // but keeping it doesn't hurt for immediate feedback to remove "Loading..." text implies
-                    // we might want to trigger once here too to clear text?
-                    // actually onDraw checks img.complete.
-                    // If we just set src, img.complete might be false.
-                    // Let's rely on img.onload to trigger the final draw.
-                    // But we might want to clear the 'Loading...' text?
-                    // The onDraw logic draws text if !img.src or !img.complete.
-                    // So we must wait for img.onload to draw the image.
+                    // Force redraw now that we know image data is available
+                    this.setDirtyCanvas(true, true);
                 };
                 tempImg.onerror = (e) => {
                     console.error("tempImg load failed (onerror):", iconUrl, e);
