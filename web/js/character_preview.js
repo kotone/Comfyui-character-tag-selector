@@ -74,6 +74,11 @@ app.registerExtension({
 
             // 创建img元素
             const img = document.createElement("img");
+            img.crossOrigin = "anonymous"; // Ensure CORS compliance
+            img.onload = () => {
+                // When this specific image finishes processing (even from cache), force a redraw
+                app.graph.setDirtyCanvas(true, true);
+            };
             Object.assign(img.style, {
                 width: "100%",
                 maxHeight: "200px",
@@ -141,7 +146,15 @@ app.registerExtension({
                 tempImg.crossOrigin = "anonymous";
                 tempImg.onload = () => {
                     img.src = iconUrl;
-                    this.setDirtyCanvas(true, true);
+                    // We don't strictly need setDirtyCanvas here because img.onload (above) will handle it,
+                    // but keeping it doesn't hurt for immediate feedback to remove "Loading..." text implies
+                    // we might want to trigger once here too to clear text?
+                    // actually onDraw checks img.complete.
+                    // If we just set src, img.complete might be false.
+                    // Let's rely on img.onload to trigger the final draw.
+                    // But we might want to clear the 'Loading...' text?
+                    // The onDraw logic draws text if !img.src or !img.complete.
+                    // So we must wait for img.onload to draw the image.
                 };
                 tempImg.onerror = () => {
                     img.src = "";
