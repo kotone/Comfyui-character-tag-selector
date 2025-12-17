@@ -1,17 +1,26 @@
 import { app } from "../../../scripts/app.js";
-import { ComfyWidgets } from "../../../scripts/widgets.js";
+// ComfyWidgets 这里其实不再需要了（我们用 custom widget 来稳定占高度并绘制）
+// import { ComfyWidgets } from "../../../scripts/widgets.js";
 
-// 存储角色数据
+// -------------------------
+// 角色数据缓存
+// -------------------------
 let characterDataMap = {};
 let isDataLoaded = false;
+
+function addKey(map, key, payload) {
+    if (!key) return;
+    const k = String(key).trim();
+    if (!k) return;
+    map[k] = payload;
+}
 
 // 加载角色数据
 async function loadCharacterData() {
     if (isDataLoaded) return;
 
     try {
-        // 从data目录加载JSON文件
-        const dataUrl = new URL('../data/genshin_impact_characters-en-cn.json', import.meta.url);
+        const dataUrl = new URL("../data/genshin_impact_characters-en-cn.json", import.meta.url);
         const response = await fetch(dataUrl);
 
         if (!response.ok) {
@@ -20,208 +29,169 @@ async function loadCharacterData() {
 
         const data = await response.json();
 
-        // 构建角色名称到数据的映射
-        data.forEach(char => {
-            const name_cn = char.name_cn || '';
-            const name_en = char.name_en || '';
+        const newMap = {};
+        data.forEach((char) => {
+            const name_cn = (char.name_cn || "").trim();
+            const name_en = (char.name_en || "").trim();
 
-            // 生成显示名称（与Python端保持一致）
-            let displayName;
-            if (name_cn && name_en) {
-                displayName = `${name_cn} (${name_en})`;
-            } else if (name_cn) {
-                displayName = name_cn;
-            } else {
-                displayName = name_en || "未命名角色";
-            }
+            let displayName = "";
+            if (name_cn && name_en) displayName = `${name_cn} (${name_en})`;
+            else if (name_cn) displayName = name_cn;
+            else displayName = name_en || "未命名角色";
 
-            characterDataMap[displayName] = {
-                icon_url: char.icon_url || '',
-                name_cn: name_cn,
-                name_en: name_en
+            const payload = {
+                icon_url: (char.icon_url || "").trim(),
+                name_cn,
+                name_en,
+                displayName,
             };
+
+            // 关键：同时支持 displayName / 中文名 / 英文名 三种 key
+            addKey(newMap, displayName, payload);
+            addKey(newMap, name_cn, payload);
+            addKey(newMap, name_en, payload);
         });
 
+        characterDataMap = newMap;
         isDataLoaded = true;
-        console.log("✅ 角色数据加载成功:", Object.keys(characterDataMap).length, "个角色");
+
+        console.log("✅ 角色数据加载成功:", Object.keys(characterDataMap).length, "keys");
     } catch (error) {
         console.error("❌ 加载角色数据失败:", error);
+        characterDataMap = {};
+        isDataLoaded = false;
     }
 }
 
+// -------------------------
 // 注册节点扩展
+// -------------------------
 app.registerExtension({
     name: "kotone.CharacterTagSelector.Preview",
 
-    async beforeRegisterNodeDef(nodeType, nodeData, app) {
-        // 只处理我们的节点
-        if (nodeData.name !== "CharacterTagSelector") {
-            return;
-        }
+    async beforeRegisterNodeDef(nodeType, nodeData, appInstance) {
+        if (nodeData.name !== "CharacterTagSelector") return;
 
-        // 加载角色数据
         await loadCharacterData();
 
-        // 扩展节点创建逻辑
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = function () {
             const result = onNodeCreated?.apply(this, arguments);
 
-            // 创建预览图片 widget
-            const imageWidget = ComfyWidgets["STRING"](this, "preview_image_widget", ["STRING", { multiline: false }], app);
-            imageWidget.widget.type = "preview_image";
-            imageWidget.widget.name = "character_preview";
+            const PREVIEW_H = 220;
+            const dirty = () => appInstance.graph.setDirtyCanvas(true, true);
 
-            // 创建img元素
-            const img = document.createElement("img");
-            img.crossOrigin = "anonymous"; // Ensure CORS compliance
-            img.onload = () => {
-                // When this specific image finishes processing (even from cache), force a redraw
-                console.log("Main img.onload fired");
-                app.graph.setDirtyCanvas(true, true);
-            };
-            img.onerror = (e) => {
-                console.error("Main img.onerror fired:", e);
-            };
-            Object.assign(img.style, {
-                width: "100%",
-                maxHeight: "200px",
-                objectFit: "contain",
-                borderRadius: "8px",
-                marginTop: "10px",
-                display: "none"
-            });
+            // 用一个 Image 对象保存当前预览图
+            const img = new Image();
 
-            //创建提示文本
-            const textDiv = document.createElement("div");
-            textDiv.textContent = "选择角色查看预览";
-            Object.assign(textDiv.style, {
-                color: "#999",
-                padding: "20px",
-                textAlign: "center",
-                fontSize: "14px"
-            });
+            // 如果你的 icon_url 是外站且不需要“读取像素/导出canvas”，不要设置 crossOrigin 更稳
+            // 如果你确定资源端带了 Access-Control-Allow-Origin，才打开下面这行
+            // img.crossOrigin = "anonymous";
 
-            // 隐藏原始widget的输入框
-            if (imageWidget.widget.inputEl) {
-                imageWidget.widget.inputEl.style.display = "none";
-            }
+            let statusText = "选择角色查看预览";
 
-            // 将img添加到widget后面
-            imageWidget.widget.computedHeight = 220;
-            imageWidget.widget.draw = function (ctx, node, width, y) {
-                // 不绘制默认的widget
+            img.onload = () => dirty();
+            img.onerror = () => {
+                img.src = "";
+                statusText = "图片加载失败";
+                dirty();
             };
 
-            // 添加自定义绘制
-            const onDrawForeground = this.onDrawForeground;
-            this.onDrawForeground = function (ctx) {
-                console.log("state", {
-                    src: img.src,
-                    complete: img.complete,
-                    naturalWidth: img.naturalWidth,
-                    naturalHeight: img.naturalHeight
-                });
-                const r = onDrawForeground?.apply?.(this, arguments);
+            // 用 custom widget 占位并绘制，避免 onDrawForeground 被裁剪/高度不稳定的问题
+            const previewWidget = this.addWidget("custom", "角色预览", "", () => { }, { serialize: false });
 
-                // 在节点底部绘制提示或图片
-                if (img.src && img.complete) {
-                    const y = this.size[1] - 220;
-                    // Debug logging (limited to once per second to avoid spam)
-                    if (!this._lastLog || Date.now() - this._lastLog > 1000) {
-                        console.log("Drawing image:", { src: img.src, w: this.size[0], y: y });
-                        this._lastLog = Date.now();
-                    }
-                    try {
-                        ctx.drawImage(img, 10, y, this.size[0] - 20, 200);
-                    } catch (e) {
-                        console.error("Draw image error:", e);
-                    }
+            previewWidget.computeSize = () => [this.size[0], PREVIEW_H];
+
+            previewWidget.draw = (ctx, node, width, y) => {
+                ctx.save();
+
+                // 背景
+                ctx.fillStyle = "rgba(0,0,0,0.06)";
+                ctx.fillRect(0, y, width, PREVIEW_H);
+
+                // 只有 naturalWidth > 0 才算真正加载成功
+                if (img.src && img.complete && img.naturalWidth > 0) {
+                    ctx.drawImage(img, 10, y + 10, width - 20, PREVIEW_H - 20);
                 } else {
-                    // Debug logging for missing image state
-                    if (!this._lastLog || Date.now() - this._lastLog > 1000) {
-                        console.log("Not drawing image:", { src: img.src, complete: img.complete });
-                        this._lastLog = Date.now();
-                    }
                     ctx.fillStyle = "#999";
                     ctx.font = "14px Arial";
                     ctx.textAlign = "center";
-                    const y = this.size[1] - 110;
-                    ctx.fillText(textDiv.textContent, this.size[0] / 2, y);
+                    ctx.textBaseline = "middle";
+                    ctx.fillText(statusText, width / 2, y + PREVIEW_H / 2);
                 }
 
-                return r;
+                ctx.restore();
             };
 
-            // 更新图片的函数
             const updateImage = (iconUrl) => {
-                console.log("updateImage called with:", iconUrl);
-                if (!iconUrl || iconUrl.trim() === '') {
+                const url = String(iconUrl ?? "").trim();
+
+                if (!url) {
                     img.src = "";
-                    textDiv.textContent = '该角色无预览图';
-                    this.setDirtyCanvas(true, true);
+                    statusText = "该角色无预览图";
+                    dirty();
                     return;
                 }
 
-                textDiv.textContent = '加载中...';
-                this.setDirtyCanvas(true, true);
+                statusText = "加载中...";
+                dirty();
 
-                // 加载图片
-                const tempImg = new Image();
-                tempImg.crossOrigin = "anonymous";
-                tempImg.onload = () => {
-                    console.log("tempImg loaded successfully:", iconUrl);
-                    img.src = iconUrl;
-                    // Force redraw now that we know image data is available
-                    this.setDirtyCanvas(true, true);
-                };
-                tempImg.onerror = (e) => {
-                    console.error("tempImg load failed (onerror):", iconUrl, e);
-                    img.src = "";
-                    textDiv.textContent = '图片加载失败';
-                    this.setDirtyCanvas(true, true);
-                };
-                tempImg.src = iconUrl;
+                // 如遇到缓存导致不触发 onload，可加时间戳强制刷新
+                const bust = (url.includes("?") ? "&" : "?") + "t=" + Date.now();
+                img.src = url + bust;
             };
 
-            // 查找character输入widget
-            const characterWidget = this.widgets?.find(w => w.name === "character");
-
+            // 找到节点里的 character widget
+            const characterWidget = this.widgets?.find((w) => w.name === "character");
             if (characterWidget) {
-                // 保存原始回调
                 const originalCallback = characterWidget.callback;
 
-                // 重写回调函数
-                characterWidget.callback = function (value) {
-                    // 调用原始回调
-                    if (originalCallback) {
-                        originalCallback.apply(this, arguments);
-                    }
+                characterWidget.callback = (value) => {
+                    originalCallback?.apply(characterWidget, arguments);
 
-                    // 更新预览图
-                    const charData = characterDataMap[value];
-                    if (charData && charData.icon_url) {
-                        updateImage(charData.icon_url);
-                    } else {
-                        updateImage('');
-                    }
+                    const key = String(value ?? "").trim();
+                    const charData = characterDataMap[key];
+
+                    // 调试：确认是否命中 icon_url
+                    console.log("character changed:", {
+                        value,
+                        key,
+                        found: !!charData,
+                        icon: charData?.icon_url,
+                    });
+
+                    updateImage(charData?.icon_url || "");
                 };
 
-                // 初始化显示第一个角色的图片
-                setTimeout(() => {
-                    if (characterWidget.value) {
-                        const charData = characterDataMap[characterWidget.value];
-                        if (charData && charData.icon_url) {
-                            updateImage(charData.icon_url);
-                        }
-                    }
-                }, 100);
+                // 初始化：如果节点创建时已经有值，立刻更新一次
+                const initKey = String(characterWidget.value ?? "").trim();
+                if (initKey) {
+                    const initData = characterDataMap[initKey];
+                    updateImage(initData?.icon_url || "");
+                }
+            } else {
+                console.warn("⚠️ 未找到名为 character 的 widget，预览不会更新");
             }
 
-            // 调整节点大小以容纳预览图
-            this.setSize([this.size[0], this.size[1] + 220]);
+            // 防止工作流加载后 size 被覆盖：配置时重新按 widgets 计算尺寸
+            const origOnConfigure = this.onConfigure;
+            this.onConfigure = function (info) {
+                origOnConfigure?.call(this, info);
+                this.setSize(this.computeSize());
+                dirty();
+
+                // 配置后再根据当前 character 值刷新一次（防止 value 先于 onNodeCreated 回填）
+                const cw = this.widgets?.find((w) => w.name === "character");
+                const key = String(cw?.value ?? "").trim();
+                const data = characterDataMap[key];
+                if (key) updateImage(data?.icon_url || "");
+            };
+
+            // 初次也让节点尺寸适配 widgets
+            this.setSize(this.computeSize());
+            dirty();
 
             return result;
         };
-    }
+    },
 });
