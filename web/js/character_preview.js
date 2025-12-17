@@ -115,10 +115,24 @@ app.registerExtension({
                 const r = onDrawForeground?.apply?.(this, arguments);
 
                 // 在节点底部绘制提示或图片
-                if (img.src && img.complete && !img.src.endsWith("data:")) {
+                if (img.src && img.complete) {
                     const y = this.size[1] - 220;
-                    ctx.drawImage(img, 10, y, this.size[0] - 20, 200);
+                    // Debug logging (limited to once per second to avoid spam)
+                    if (!this._lastLog || Date.now() - this._lastLog > 1000) {
+                        console.log("Drawing image:", { src: img.src, w: this.size[0], y: y });
+                        this._lastLog = Date.now();
+                    }
+                    try {
+                        ctx.drawImage(img, 10, y, this.size[0] - 20, 200);
+                    } catch (e) {
+                        console.error("Draw image error:", e);
+                    }
                 } else {
+                    // Debug logging for missing image state
+                    if (!this._lastLog || Date.now() - this._lastLog > 1000) {
+                        console.log("Not drawing image:", { src: img.src, complete: img.complete });
+                        this._lastLog = Date.now();
+                    }
                     ctx.fillStyle = "#999";
                     ctx.font = "14px Arial";
                     ctx.textAlign = "center";
@@ -131,6 +145,7 @@ app.registerExtension({
 
             // 更新图片的函数
             const updateImage = (iconUrl) => {
+                console.log("updateImage called with:", iconUrl);
                 if (!iconUrl || iconUrl.trim() === '') {
                     img.src = "";
                     textDiv.textContent = '该角色无预览图';
