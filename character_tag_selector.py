@@ -38,7 +38,7 @@ class CharacterTagSelector:
     def get_data_dir(cls) -> str:
         """获取data目录的绝对路径"""
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        data_dir = os.path.join(current_dir, "data")
+        data_dir = os.path.join(current_dir, "web", "data")
         return data_dir
     
     @classmethod

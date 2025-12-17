@@ -1,5 +1,5 @@
-import { app } from "../../scripts/app.js";
-import { ComfyWidgets } from "../../scripts/widgets.js";
+import { app } from "../../../scripts/app.js";
+import { ComfyWidgets } from "../../../scripts/widgets.js";
 
 // 存储角色数据
 let characterDataMap = {};
@@ -11,7 +11,7 @@ async function loadCharacterData() {
 
     try {
         // 从data目录加载JSON文件
-        const response = await fetch('/extensions/comfyui-character-tag-selector/data/genshin_impact_characters-en-cn.json');
+        const response = await fetch('../data/genshin_impact_characters-en-cn.json');
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
