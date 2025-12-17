@@ -109,6 +109,74 @@ class CharacterTagSelector:
             return []
     
     @classmethod
+    def get_character_list(cls) -> List[str]:
+        """
+        获取默认JSON文件的角色列表
+        返回格式：["中文名 (英文名)", ...]
+        """
+        # 获取第一个可用的JSON文件
+        available_files = cls.get_available_json_files()
+        if not available_files or available_files[0] == "未找到JSON文件":
+            return ["未加载角色数据"]
+        
+        # 加载数据
+        characters_data = cls.load_json_file(available_files[0])
+        if not characters_data:
+            return ["未加载角色数据"]
+        
+        # 生成角色列表
+        character_list = []
+        for char in characters_data:
+            name_cn = char.get('name_cn', '')
+            name_en = char.get('name_en', '')
+            
+            # 格式化显示名称
+            if name_cn and name_en:
+                display_name = f"{name_cn} ({name_en})"
+            elif name_cn:
+                display_name = name_cn
+            else:
+                display_name = name_en if name_en else "未命名角色"
+            
+            character_list.append(display_name)
+        
+        print(f"✅ 已加载 {len(character_list)} 个角色")
+        return character_list
+    
+    @classmethod
+    def find_character_by_name(cls, character_name: str, json_file: str) -> Dict:
+        """
+        根据显示名称查找角色数据
+        
+        Args:
+            character_name: 显示名称，格式为 "中文名 (英文名)" 或 "英文名" 或 "中文名"
+            json_file: JSON文件名或路径
+            
+        Returns:
+            角色数据字典，未找到返回None
+        """
+        characters_data = cls.load_json_file(json_file)
+        if not characters_data:
+            return None
+        
+        for char in characters_data:
+            name_cn = char.get('name_cn', '')
+            name_en = char.get('name_en', '')
+            
+            # 生成显示名称（与get_character_list保持一致）
+            if name_cn and name_en:
+                display_name = f"{name_cn} ({name_en})"
+            elif name_cn:
+                display_name = name_cn
+            else:
+                display_name = name_en if name_en else "未命名角色"
+            
+            if display_name == character_name:
+                return char
+        
+        return None
+    
+    @classmethod
     def create_placeholder_image(cls, width: int = 512, height: int = 512) -> torch.Tensor:
         """创建占位图片（纯灰色图片）"""
         # 创建一个灰色图片 (RGB: 128, 128, 128)
@@ -186,17 +254,16 @@ class CharacterTagSelector:
         """定义节点的输入参数"""
         # 获取可用的JSON文件列表
         available_files = cls.get_available_json_files()
+        # 获取角色列表
+        character_list = cls.get_character_list()
         
         return {
             "required": {
                 "json_file": (available_files, {
                     "default": available_files[0] if available_files else "未找到JSON文件"
                 }),
-                "character_index": ("INT", {
-                    "default": 0,
-                    "min": 0,
-                    "max": 9999,
-                    "step": 1,
+                "character": (character_list, {
+                    "default": character_list[0] if character_list else "未加载角色数据"
                 }),
                 "output_type": (list(cls.OUTPUT_TYPES_MAP.keys()), {
                     "default": "Danbooru标签"
@@ -211,33 +278,26 @@ class CharacterTagSelector:
     
     OUTPUT_NODE = True  # 标记为输出节点
     
-    def generate_tag(self, json_file: str, character_index: int, output_type: str) -> Tuple[str, torch.Tensor]:
+    def generate_tag(self, json_file: str, character: str, output_type: str) -> Tuple[str, torch.Tensor]:
         """
         生成角色标签和预览图
         
         Args:
             json_file: JSON文件路径
-            character_index: 角色索引
+            character: 角色显示名称
             output_type: 输出类型
         
         Returns:
             (tag_string, preview_image) 元组
         """
-        # 加载数据
-        characters_data = self.load_json_file(json_file)
-        
         # 创建占位图
         placeholder = self.create_placeholder_image()
         
-        if not characters_data:
-            return ("❌ 无法加载角色数据文件", placeholder)
+        # 根据显示名称查找角色数据
+        char_data = self.find_character_by_name(character, json_file)
         
-        # 检查索引是否有效
-        if character_index < 0 or character_index >= len(characters_data):
-            return (f"❌ 索引超出范围: {character_index} (总数: {len(characters_data)})", placeholder)
-        
-        # 获取角色数据
-        char_data = characters_data[character_index]
+        if not char_data:
+            return (f"❌ 未找到角色: {character}", placeholder)
         
         name_cn = char_data.get('name_cn', '')
         name_en = char_data.get('name_en', '')
@@ -275,7 +335,7 @@ class CharacterTagSelector:
         return ("❌ 未知的输出类型", placeholder)
     
     @classmethod
-    def IS_CHANGED(cls, json_file, character_index, output_type):
+    def IS_CHANGED(cls, json_file, character, output_type):
         """检测参数变化，确保节点更新"""
         # 处理文件路径
         if os.path.sep not in json_file and '/' not in json_file and '\\' not in json_file:
@@ -283,11 +343,11 @@ class CharacterTagSelector:
         else:
             full_path = json_file
         
-        # 包含文件的修改时间，以便文件更新时自动刷新
+        # 包含文件的修改时间和角色名
         if os.path.exists(full_path):
             mtime = os.path.getmtime(full_path)
-            return f"{full_path}_{mtime}_{character_index}_{output_type}"
-        return f"{json_file}_{character_index}_{output_type}"
+            return f"{full_path}_{mtime}_{character}_{output_type}"
+        return f"{json_file}_{character}_{output_type}"
 
 
 # ComfyUI 节点映射

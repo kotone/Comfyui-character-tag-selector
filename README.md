@@ -45,7 +45,11 @@ ComfyUI/
 
 ### 2. 使用节点
 
-在 ComfyUI 中添加"Character Tag Selector"节点，从下拉列表中选择要使用的 JSON 文件。
+在 ComfyUI 中添加"Character Tag Selector"节点：
+1. 从 `json_file` 下拉列表选择数据文件
+2. 从 `character` 下拉列表选择角色（支持输入中英文搜索）
+3. 选择输出格式
+4. 自动显示角色预览图
 
 ### 3. 连接节点
 
@@ -80,7 +84,7 @@ ComfyUI/
 | 参数 | 类型 | 范围 | 说明 |
 |------|------|------|------|
 | json_file | 下拉选择 | - | 从 data 目录中选择 JSON 文件 |
-| character_index | INT | 0-9999 | 角色在数组中的索引位置（从0开始） |
+| character | 下拉选择 | - | 选择角色（支持中英文搜索） |
 | output_type | 下拉选择 | 4种格式 | 选择输出标签的格式 |
 
 ## 节点输出说明
