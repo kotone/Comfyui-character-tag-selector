@@ -1,6 +1,4 @@
 import { app } from "../../../scripts/app.js";
-// ComfyWidgets 这里其实不再需要了（我们用 custom widget 来稳定占高度并绘制）
-// import { ComfyWidgets } from "../../../scripts/widgets.js";
 
 // -------------------------
 // 角色数据缓存
