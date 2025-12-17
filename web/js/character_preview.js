@@ -160,6 +160,7 @@ app.registerExtension({
                 const tempImg = new Image();
                 tempImg.crossOrigin = "anonymous";
                 tempImg.onload = () => {
+                    console.log("tempImg loaded successfully:", iconUrl);
                     img.src = iconUrl;
                     // We don't strictly need setDirtyCanvas here because img.onload (above) will handle it,
                     // but keeping it doesn't hurt for immediate feedback to remove "Loading..." text implies
@@ -171,7 +172,8 @@ app.registerExtension({
                     // The onDraw logic draws text if !img.src or !img.complete.
                     // So we must wait for img.onload to draw the image.
                 };
-                tempImg.onerror = () => {
+                tempImg.onerror = (e) => {
+                    console.error("tempImg load failed (onerror):", iconUrl, e);
                     img.src = "";
                     textDiv.textContent = '图片加载失败';
                     this.setDirtyCanvas(true, true);
