@@ -1,10 +1,13 @@
 import { app } from "../../../scripts/app.js";
 
 // -------------------------
-// 角色数据缓存
+// 角色数据缓存：按 json_file 缓存
 // -------------------------
-let characterDataMap = {};
-let isDataLoaded = false;
+let currentFile = "";
+let characterDataMap = {}; // 当前文件对应的 map（key -> payload）
+let characterDisplayList = []; // 当前文件对应的下拉列表（displayName 数组）
+
+const fileCache = new Map(); // fileName -> { map, list }
 
 function addKey(map, key, payload) {
     if (!key) return;
@@ -13,12 +16,37 @@ function addKey(map, key, payload) {
     map[k] = payload;
 }
 
-// 加载角色数据
-async function loadCharacterData() {
-    if (isDataLoaded) return;
+function normalizeJsonFile(value) {
+    // 保险：只取 basename，避免传入路径导致 URL 不对
+    let s = String(value ?? "").trim();
+    if (!s) return "";
+    s = s.replace(/\\/g, "/");
+    s = s.split("/").pop();       // basename
+    if (s.includes("..")) return "";
+    return s;
+}
+
+async function loadCharacterDataForFile(jsonFileValue) {
+    const fileName = normalizeJsonFile(jsonFileValue);
+    if (!fileName) {
+        currentFile = "";
+        characterDataMap = {};
+        characterDisplayList = ["未加载角色数据"];
+        return;
+    }
+
+    // 命中缓存
+    if (fileCache.has(fileName)) {
+        const cached = fileCache.get(fileName);
+        currentFile = fileName;
+        characterDataMap = cached.map;
+        characterDisplayList = cached.list;
+        return;
+    }
 
     try {
-        const dataUrl = new URL("../data/genshin_impact_characters-en-cn.json", import.meta.url);
+        // 注意：这里假设你的 json 都在 web/data/ 下
+        const dataUrl = new URL(`../data/${fileName}`, import.meta.url);
         const response = await fetch(dataUrl);
 
         if (!response.ok) {
@@ -26,8 +54,13 @@ async function loadCharacterData() {
         }
 
         const data = await response.json();
+        if (!Array.isArray(data)) {
+            throw new Error("JSON 格式错误：期望数组");
+        }
 
         const newMap = {};
+        const newList = [];
+
         data.forEach((char) => {
             const name_cn = (char.name_cn || "").trim();
             const name_en = (char.name_en || "").trim();
@@ -44,33 +77,47 @@ async function loadCharacterData() {
                 displayName,
             };
 
-            // 关键：同时支持 displayName / 中文名 / 英文名 三种 key
+            // 下拉列表只放 displayName（一角色一项）
+            newList.push(displayName);
+
+            // map 同时支持 displayName / 中文名 / 英文名 命中
             addKey(newMap, displayName, payload);
             addKey(newMap, name_cn, payload);
             addKey(newMap, name_en, payload);
         });
 
-        characterDataMap = newMap;
-        isDataLoaded = true;
+        // 去重一下（以防 JSON 内 displayName 重复）
+        const uniqList = Array.from(new Set(newList));
+        if (uniqList.length === 0) uniqList.push("未加载角色数据");
 
-        console.log("✅ 角色数据加载成功:", Object.keys(characterDataMap).length, "keys");
+        fileCache.set(fileName, { map: newMap, list: uniqList });
+
+        currentFile = fileName;
+        characterDataMap = newMap;
+        characterDisplayList = uniqList;
+
+        console.log("✅ 角色数据加载成功:", fileName, uniqList.length, "characters");
     } catch (error) {
-        console.error("❌ 加载角色数据失败:", error);
+        console.error("❌ 加载角色数据失败:", fileName, error);
+        currentFile = fileName;
         characterDataMap = {};
-        isDataLoaded = false;
+        characterDisplayList = ["未加载角色数据"];
     }
+}
+
+function setComboValues(widget, values) {
+    widget.options = widget.options || {};
+    widget.options.values = Array.isArray(values) && values.length ? values : ["未加载角色数据"];
 }
 
 // -------------------------
 // 注册节点扩展
 // -------------------------
 app.registerExtension({
-    name: "kotone.CharacterTagSelector.Preview",
+    name: "kotone.CharacterTagSelector.Preview+DynamicList",
 
     async beforeRegisterNodeDef(nodeType, nodeData, appInstance) {
         if (nodeData.name !== "CharacterTagSelector") return;
-
-        await loadCharacterData();
 
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = function () {
@@ -79,13 +126,8 @@ app.registerExtension({
             const PREVIEW_H = 220;
             const dirty = () => appInstance.graph.setDirtyCanvas(true, true);
 
-            // 用一个 Image 对象保存当前预览图
+            // 预览 Image
             const img = new Image();
-
-            // 如果你的 icon_url 是外站且不需要“读取像素/导出canvas”，不要设置 crossOrigin 更稳
-            // 如果你确定资源端带了 Access-Control-Allow-Origin，才打开下面这行
-            // img.crossOrigin = "anonymous";
-
             let statusText = "选择角色查看预览";
 
             img.onload = () => dirty();
@@ -95,19 +137,14 @@ app.registerExtension({
                 dirty();
             };
 
-            // 用 custom widget 占位并绘制，避免 onDrawForeground 被裁剪/高度不稳定的问题
+            // 预览 widget
             const previewWidget = this.addWidget("custom", "角色预览", "", () => { }, { serialize: false });
-
             previewWidget.computeSize = () => [this.size[0], PREVIEW_H];
-
             previewWidget.draw = (ctx, node, width, y) => {
                 ctx.save();
-
-                // 背景
                 ctx.fillStyle = "rgba(0,0,0,0.06)";
                 ctx.fillRect(0, y, width, PREVIEW_H);
 
-                // 只有 naturalWidth > 0 才算真正加载成功
                 if (img.src && img.complete && img.naturalWidth > 0) {
                     ctx.drawImage(img, 10, y + 10, width - 20, PREVIEW_H - 20);
                 } else {
@@ -117,13 +154,11 @@ app.registerExtension({
                     ctx.textBaseline = "middle";
                     ctx.fillText(statusText, width / 2, y + PREVIEW_H / 2);
                 }
-
                 ctx.restore();
             };
 
             const updateImage = (iconUrl) => {
                 const url = String(iconUrl ?? "").trim();
-
                 if (!url) {
                     img.src = "";
                     statusText = "该角色无预览图";
@@ -134,58 +169,115 @@ app.registerExtension({
                 statusText = "加载中...";
                 dirty();
 
-                // 如遇到缓存导致不触发 onload，可加时间戳强制刷新
                 const bust = (url.includes("?") ? "&" : "?") + "t=" + Date.now();
                 img.src = url + bust;
             };
 
-            // 找到节点里的 character widget
+            // 找 widgets
+            const jsonWidget = this.widgets?.find((w) => w.name === "json_file");
             const characterWidget = this.widgets?.find((w) => w.name === "character");
-            if (characterWidget) {
-                const originalCallback = characterWidget.callback;
 
-                characterWidget.callback = (value) => {
-                    originalCallback?.apply(characterWidget, arguments);
-
-                    const key = String(value ?? "").trim();
-                    const charData = characterDataMap[key];
-
-                    // 调试：确认是否命中 icon_url
-                    console.log("character changed:", {
-                        value,
-                        key,
-                        found: !!charData,
-                        icon: charData?.icon_url,
-                    });
-
-                    updateImage(charData?.icon_url || "");
-                };
-
-                // 初始化：如果节点创建时已经有值，立刻更新一次
-                const initKey = String(characterWidget.value ?? "").trim();
-                if (initKey) {
-                    const initData = characterDataMap[initKey];
-                    updateImage(initData?.icon_url || "");
-                }
-            } else {
+            if (!characterWidget) {
                 console.warn("⚠️ 未找到名为 character 的 widget，预览不会更新");
+                return result;
             }
 
-            // 防止工作流加载后 size 被覆盖：配置时重新按 widgets 计算尺寸
+            // 角色变化：更新预览
+            const originalCharacterCb = characterWidget.callback;
+            characterWidget.callback = (value) => {
+                originalCharacterCb?.apply(characterWidget, arguments);
+
+                const key = String(value ?? "").trim();
+                const charData = characterDataMap[key];
+
+                console.log("character changed:", {
+                    file: currentFile,
+                    value,
+                    key,
+                    found: !!charData,
+                    icon: charData?.icon_url,
+                });
+
+                updateImage(charData?.icon_url || "");
+            };
+
+            // json_file 变化：刷新下拉列表 + 刷新预览
+            if (jsonWidget) {
+                const originalJsonCb = jsonWidget.callback;
+
+                jsonWidget.callback = (value) => {
+                    originalJsonCb?.apply(jsonWidget, arguments);
+
+                    // 异步刷新（不阻塞 UI）
+                    Promise.resolve()
+                        .then(async () => {
+                            await loadCharacterDataForFile(jsonWidget.value);
+
+                            // 更新 character 下拉列表
+                            setComboValues(characterWidget, characterDisplayList);
+
+                            // 如果当前选择不在新列表里，切到第一个
+                            if (!characterDisplayList.includes(characterWidget.value)) {
+                                characterWidget.value = characterDisplayList[0];
+                            }
+
+                            // 刷新预览
+                            const key = String(characterWidget.value ?? "").trim();
+                            const data = characterDataMap[key];
+                            updateImage(data?.icon_url || "");
+
+                            this.setSize(this.computeSize());
+                            dirty();
+                        })
+                        .catch((e) => console.error("[CharacterTagSelector] json change refresh failed:", e));
+                };
+            }
+
+            // 初始化：按当前 json_file 加载一次，并同步下拉 + 预览
+            const init = async () => {
+                await loadCharacterDataForFile(jsonWidget?.value);
+
+                setComboValues(characterWidget, characterDisplayList);
+
+                if (!characterDisplayList.includes(characterWidget.value)) {
+                    characterWidget.value = characterDisplayList[0];
+                }
+
+                const key = String(characterWidget.value ?? "").trim();
+                const data = characterDataMap[key];
+                updateImage(data?.icon_url || "");
+
+                this.setSize(this.computeSize());
+                dirty();
+            };
+            init().catch(console.error);
+
+            // 工作流加载后：再同步一次（避免 value 回填顺序导致不刷新）
             const origOnConfigure = this.onConfigure;
             this.onConfigure = function (info) {
                 origOnConfigure?.call(this, info);
-                this.setSize(this.computeSize());
-                dirty();
 
-                // 配置后再根据当前 character 值刷新一次（防止 value 先于 onNodeCreated 回填）
-                const cw = this.widgets?.find((w) => w.name === "character");
-                const key = String(cw?.value ?? "").trim();
-                const data = characterDataMap[key];
-                if (key) updateImage(data?.icon_url || "");
+                Promise.resolve()
+                    .then(async () => {
+                        await loadCharacterDataForFile(jsonWidget?.value);
+
+                        setComboValues(characterWidget, characterDisplayList);
+
+                        if (!characterDisplayList.includes(characterWidget.value)) {
+                            characterWidget.value = characterDisplayList[0];
+                        }
+
+                        const key = String(characterWidget.value ?? "").trim();
+                        const data = characterDataMap[key];
+                        updateImage(data?.icon_url || "");
+
+                        this.setSize(this.computeSize());
+                        dirty();
+                    })
+                    .catch(console.error);
             };
 
-            // 初次也让节点尺寸适配 widgets
+            // 初次尺寸适配
             this.setSize(this.computeSize());
             dirty();
 
