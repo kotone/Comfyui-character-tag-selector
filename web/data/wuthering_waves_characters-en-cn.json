@@ -1,0 +1,416 @@
+[
+  {
+    "name_cn": "千咲",
+    "name_en": "Chisa",
+    "tag": "chisa_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_Qianxiao_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "卜灵",
+    "name_en": "Buling",
+    "tag": "buling_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_Buling_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "嘉贝莉娜",
+    "name_en": "Galbrena",
+    "tag": "galbrena_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_jiabeilina_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "仇远",
+    "name_en": "Qiuyuan",
+    "tag": "qiuyuan_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_qiuyuan_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "奥古斯塔",
+    "name_en": "Augusta",
+    "tag": "augusta_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_aogusita_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "尤诺",
+    "name_en": "Iuno",
+    "tag": "iuno_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_younuo_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "弗洛洛",
+    "name_en": "Phrolova",
+    "tag": "phrolova_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_fuluoluo_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "卡提希娅",
+    "name_en": "Cartethyia",
+    "tag": "cartethyia_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_katixiya_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "露帕",
+    "name_en": "Lupa",
+    "tag": "lupa_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_lupa_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "夏空",
+    "name_en": "Ciaccona",
+    "tag": "ciaccona_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_xiakong_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "赞妮",
+    "name_en": "Zani",
+    "tag": "zani_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_zanni_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "坎特蕾拉",
+    "name_en": "Cantarella",
+    "tag": "cantarella_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_kanteleila_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "漂泊者·气动",
+    "name_en": "Rover: Aero",
+    "tag": "rover_aero_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_zhujuenan_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "漂泊者·气动",
+    "name_en": "Rover: Aero",
+    "tag": "rover_aero_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_zhujue_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "布兰特",
+    "name_en": "Brant",
+    "tag": "brant_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_Bulante_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "菲比",
+    "name_en": "Phoebe",
+    "tag": "phoebe_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_Feibi_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "洛可可",
+    "name_en": "Roccia",
+    "tag": "roccia_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_luokeke_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "珂莱塔",
+    "name_en": "Carlotta",
+    "tag": "carlotta_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_kelaita_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "椿",
+    "name_en": "Camellya",
+    "tag": "camellya_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_chun_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "灯灯",
+    "name_en": "Lumi",
+    "tag": "lumi_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_dengdeng_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "守岸人",
+    "name_en": "Shorekeeper",
+    "tag": "shorekeeper_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_shouanren_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "釉瑚",
+    "name_en": "Youhu",
+    "tag": "youhu_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_youhu_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "折枝",
+    "name_en": "Zhezhi",
+    "tag": "zhezhi_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_zhezhi_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "相里要",
+    "name_en": "Xiangli Yao",
+    "tag": "xiangli_yao_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_xiangliyao_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "长离",
+    "name_en": "Changli",
+    "tag": "changli_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_changli_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "今汐",
+    "name_en": "Jinhsi",
+    "tag": "jinhsi_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_jinxi_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "吟霖",
+    "name_en": "Yinlin",
+    "tag": "yinlin_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_yinlin_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "忌炎",
+    "name_en": "Jiyan",
+    "tag": "jiyan_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_jiyan_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "鉴心",
+    "name_en": "Jianxin",
+    "tag": "jianxin_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_jiexin_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "卡卡罗",
+    "name_en": "Calcharo",
+    "tag": "calcharo_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_kakaluo_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "安可",
+    "name_en": "Encore",
+    "tag": "encore_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_anke_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "维里奈",
+    "name_en": "Verina",
+    "tag": "verina_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_jueyuan_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "凌阳",
+    "name_en": "Lingyang",
+    "tag": "lingyang_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_lingyang_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "漂泊者·衍射",
+    "name_en": "Rover: Spectro",
+    "tag": "rover_spectro_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_zhujuenan_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "漂泊者·衍射",
+    "name_en": "Rover: Spectro",
+    "tag": "rover_spectro_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_zhujue_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "漂泊者·湮灭",
+    "name_en": "Rover: Havoc",
+    "tag": "rover_havoc_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_zhujuenan_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "漂泊者·湮灭",
+    "name_en": "Rover: Havoc",
+    "tag": "rover_havoc_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_zhujue_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "秧秧",
+    "name_en": "Yangyang",
+    "tag": "yangyang_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_yangyang_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "白芷",
+    "name_en": "Baizhi",
+    "tag": "baizhi_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_bailian_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "炽霞",
+    "name_en": "Chixia",
+    "tag": "chixia_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_maxiaofang_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "散华",
+    "name_en": "Sanhua",
+    "tag": "sanhua_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_shanhua_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "秋水",
+    "name_en": "Aalto",
+    "tag": "aalto_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_qiushui_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "丹瑾",
+    "name_en": "Danjin",
+    "tag": "danjin_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_micai_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "莫特斐",
+    "name_en": "Mortefi",
+    "tag": "mortefi_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_baer_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "渊武",
+    "name_en": "Yuanwu",
+    "tag": "yuanwu_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_yuanwu_UI.png",
+    "header_img_url": ""
+  },
+  {
+    "name_cn": "桃祈",
+    "name_en": "Taoqi",
+    "tag": "taoqi_(wuthering_waves)",
+    "source": "wuthering_waves",
+    "source_cn": "鸣潮",
+    "icon_url": "https://mc.appfeng.com/ui/avatar/T_IconRole_Pile_taohua_UI.png",
+    "header_img_url": ""
+  }
+]
