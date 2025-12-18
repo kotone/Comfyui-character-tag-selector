@@ -4,9 +4,17 @@
 
 这是一个 ComfyUI 自定义节点，用于从游戏角色数据库中选择角色，支持实时预览，并生成各种格式的标签输出。
 
+![列表](./images/3.png "列表")
+![列表](./images/1.png "列表")
+![列表](./images/2.png "列表")
+
+
 ## 作品列表  
 
 - [x] 原神（Genshin Impact）
+- [x] 崩坏：星穹铁道（honkai Starrail）
+- [x] 绝区零（Zenless Zone Zero）
+- [x] 鸣潮（Wuthering Waves）
 
 
 ## 安装方法
