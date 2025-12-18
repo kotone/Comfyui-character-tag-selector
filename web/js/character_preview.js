@@ -140,13 +140,52 @@ app.registerExtension({
             // 预览 widget
             const previewWidget = this.addWidget("custom", "角色预览", "", () => { }, { serialize: false });
             previewWidget.computeSize = () => [this.size[0], PREVIEW_H];
+
+            // 等比包含（不裁切，不形变）
+            function drawImageContain(ctx, img, x, y, w, h) {
+                const iw = img.naturalWidth || img.width;
+                const ih = img.naturalHeight || img.height;
+                if (!iw || !ih) return;
+
+                // 等比缩放：把整张图“塞进”容器，不裁切、不形变
+                const scale = Math.min(w / iw, h / ih);
+
+                // 如果你不希望小图被放大（避免糊），用这一行替换上面那行：
+                // const scale = Math.min(w / iw, h / ih, 1);
+
+                const dw = iw * scale;
+                const dh = ih * scale;
+                const dx = x + (w - dw) / 2;
+                const dy = y + (h - dh) / 2;
+
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = "high";
+                ctx.drawImage(img, dx, dy, dw, dh);
+            }
+
             previewWidget.draw = (ctx, node, width, y) => {
                 ctx.save();
+
+                // 背景
                 ctx.fillStyle = "rgba(0,0,0,0.06)";
                 ctx.fillRect(0, y, width, PREVIEW_H);
 
+                const pad = 10;
+                const boxX = pad;
+                const boxY = y + pad;
+                const boxW = width - pad * 2;
+                const boxH = PREVIEW_H - pad * 2;
+
                 if (img.src && img.complete && img.naturalWidth > 0) {
-                    ctx.drawImage(img, 10, y + 10, width - 20, PREVIEW_H - 20);
+                    // 裁剪到预览区域，防止绘制溢出
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(boxX, boxY, boxW, boxH);
+                    ctx.clip();
+
+                    drawImageContain(ctx, img, boxX, boxY, boxW, boxH);
+
+                    ctx.restore();
                 } else {
                     ctx.fillStyle = "#999";
                     ctx.font = "14px Arial";
@@ -154,8 +193,25 @@ app.registerExtension({
                     ctx.textBaseline = "middle";
                     ctx.fillText(statusText, width / 2, y + PREVIEW_H / 2);
                 }
+
                 ctx.restore();
             };
+            // previewWidget.draw = (ctx, node, width, y) => {
+            //     ctx.save();
+            //     ctx.fillStyle = "rgba(0,0,0,0.06)";
+            //     ctx.fillRect(0, y, width, PREVIEW_H);
+
+            //     if (img.src && img.complete && img.naturalWidth > 0) {
+            //         ctx.drawImage(img, 10, y + 10, width - 20, PREVIEW_H - 20);
+            //     } else {
+            //         ctx.fillStyle = "#999";
+            //         ctx.font = "14px Arial";
+            //         ctx.textAlign = "center";
+            //         ctx.textBaseline = "middle";
+            //         ctx.fillText(statusText, width / 2, y + PREVIEW_H / 2);
+            //     }
+            //     ctx.restore();
+            // };
 
             const updateImage = (iconUrl) => {
                 const url = String(iconUrl ?? "").trim();
