@@ -9,7 +9,7 @@
 ![列表](./images/2.png "列表")
 
 
-## 作品列表  
+## 作品列表(后续更新中)
 
 - [x] 原神（Genshin Impact）
 - [x] 崩坏：星穹铁道（honkai Starrail）
