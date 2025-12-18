@@ -42,6 +42,43 @@ class CharacterTagSelector:
     # url_md5 -> image_tensor
     _image_cache: Dict[str, torch.Tensor] = {}
 
+     # signature -> all_character_choices
+    _all_character_choices_cache: Tuple[str, List[str]] = ("", [])
+
+    @classmethod
+    def get_all_character_choices(cls) -> List[str]:
+        """
+        返回 web/data 下所有 JSON 的角色 displayName 并集（去重）。
+        用文件 mtime 做简单缓存，避免每次 INPUT_TYPES 都全量解析。
+        """
+        files = cls.get_available_json_files()
+        # 构造签名：文件名 + mtime，任何文件更新都会导致签名变化
+        sig_parts: List[str] = []
+        for f in files:
+            full = cls._resolve_json_path(f)
+            if full and os.path.exists(full):
+                sig_parts.append(f"{os.path.basename(full)}:{os.path.getmtime(full)}")
+        signature = "|".join(sig_parts)
+
+        if cls._all_character_choices_cache[0] == signature:
+            return cls._all_character_choices_cache[1]
+
+        names = set()
+        for f in files:
+            if not f or f == "未找到JSON文件":
+                continue
+            lst = cls.get_character_list_for_file(f)
+            for n in lst:
+                if n and n != "未加载角色数据":
+                    names.add(n)
+
+        all_choices = sorted(names)
+        if not all_choices:
+            all_choices = ["未加载角色数据"]
+
+        cls._all_character_choices_cache = (signature, all_choices)
+        return all_choices
+
     @classmethod
     def get_data_dir(cls) -> str:
         """web/data 目录绝对路径"""
@@ -216,12 +253,32 @@ class CharacterTagSelector:
         default_file = available_files[0] if available_files else "未找到JSON文件"
 
         # 注意：这里只能初始化一次，动态联动需要前端 JS 去刷新下拉
-        character_list = cls.get_character_list_for_file(default_file)
+        # character_list = cls.get_character_list_for_file(default_file)
+
+        # return {
+        #     "required": {
+        #         "json_file": (available_files, {"default": default_file}),
+        #         "character": (character_list, {"default": character_list[0] if character_list else "未加载角色数据"}),
+        #         "output_type": (list(cls.OUTPUT_TYPES_MAP.keys()), {"default": "Danbooru标签"}),
+        #     }
+        # }
+
+        
+        # 后端给“全集”用于校验通过；前端再按 json_file 动态过滤显示
+        all_character_choices = cls.get_all_character_choices()
+
+        # 默认值仍尽量用默认文件的第一个角色（更符合直觉）
+        default_file_characters = cls.get_character_list_for_file(default_file)
+        character_default = (
+            default_file_characters[0]
+            if default_file_characters and default_file_characters[0] != "未加载角色数据"
+            else all_character_choices[0]
+        )
 
         return {
             "required": {
                 "json_file": (available_files, {"default": default_file}),
-                "character": (character_list, {"default": character_list[0] if character_list else "未加载角色数据"}),
+                "character": (all_character_choices, {"default": character_default}),
                 "output_type": (list(cls.OUTPUT_TYPES_MAP.keys()), {"default": "Danbooru标签"}),
             }
         }
