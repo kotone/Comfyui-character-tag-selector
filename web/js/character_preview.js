@@ -212,9 +212,16 @@ app.registerExtension({
             //     }
             //     ctx.restore();
             // };
+            function buildPreviewSrc(iconUrl) {
+                const url = String(iconUrl ?? "").trim();
+                if (!url) return "";
+                const u = new URL("/character_tag_selector/icon", window.location.origin);
+                u.searchParams.set("url", url);
+                return u.toString();
+            }
 
             const updateImage = (iconUrl) => {
-                const url = String(iconUrl ?? "").trim();
+                const url = buildPreviewSrc(iconUrl) || String(iconUrl ?? "").trim();
                 if (!url) {
                     img.src = "";
                     statusText = "该角色无预览图";
@@ -225,8 +232,8 @@ app.registerExtension({
                 statusText = "加载中...";
                 dirty();
 
-                const bust = (url.includes("?") ? "&" : "?") + "t=" + Date.now();
-                img.src = url + bust;
+                // const bust = (url.includes("?") ? "&" : "?") + "t=" + Date.now();
+                img.src = url;
             };
 
             // 找 widgets

@@ -2,12 +2,11 @@
 ComfyUI 自定义节点：CharacterTagSelector
 - 扫描 web/data 下的多个 JSON 文件作为数据源
 - generate_tag 会按当前选中的 json_file 查找角色并输出标签 + 预览图
+- 后端 INPUT_TYPES 只能初始化 character 列表（动态联动需要你前端 JS 来更新下拉）
+- 额外提供一个可选的 HTTP 接口：/character_tag_selector/characters?json_file=xxx.json
+  便于前端按文件获取角色列表（你的 JS 如果走静态 JSON 也可以不用这个接口）
 """
 
-from collections import OrderedDict
-import threading
-import tempfile
-import shutil
 import os
 import json
 import hashlib
@@ -41,32 +40,7 @@ class CharacterTagSelector:
     _data_cache: Dict[str, Tuple[float, List[Dict]]] = {}
 
     # url_md5 -> image_tensor
-    # _image_cache: Dict[str, torch.Tensor] = {}
-
-    # ===== 图片缓存策略 =====
-    # 内存：LRU tensor 缓存（强限制，避免 OOM）
-    _tensor_lru: "OrderedDict[str, torch.Tensor]" = OrderedDict()
-    _tensor_lru_bytes: int = 0
-    _MAX_MEM_CACHE_ITEMS: int = 64           # 最多缓存 64 张 tensor
-    _MAX_MEM_CACHE_BYTES: int = 256 * 1024 * 1024  # 或最多 256MB（按需调小/调大）
-
-    # 硬盘：持久化缓存（webp + sha256 校验）
-    _MAX_DOWNLOAD_BYTES: int = 10 * 1024 * 1024  # 单张最多下载 10MB，避免超大文件
-    _USER_AGENT: str = (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/120.0.0.0 Safari/537.36"
-    )
-    _request_headers = {
-        "User-Agent": _USER_AGENT,
-        "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
-        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-        "Connection": "keep-alive",
-    }
-
-    # 并发下载保护（避免同一 URL 多次下载）
-    _url_locks: Dict[str, threading.Lock] = {}
-    _url_locks_guard = threading.Lock()
+    _image_cache: Dict[str, torch.Tensor] = {}
 
      # signature -> all_character_choices
     _all_character_choices_cache: Tuple[str, List[str]] = ("", [])
@@ -250,275 +224,28 @@ class CharacterTagSelector:
         return tensor.unsqueeze(0)
 
     @classmethod
-    def _get_disk_cache_dir(cls) -> str:
-        """
-        图片硬盘缓存目录：<node>/web/cache/character_tag_selector
-        放在 web 下便于你调试查看；也可以换到更合适的位置。
-        """
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        d = os.path.join(current_dir, "web", "cache", "character_tag_selector")
-        os.makedirs(d, exist_ok=True)
-        return d
-
-    @classmethod
-    def _url_to_cache_key(cls, url: str) -> str:
-        return hashlib.md5(url.encode("utf-8")).hexdigest()
-
-    @classmethod
-    def _cache_paths_for_url(cls, url: str) -> Tuple[str, str]:
-        """
-        返回 (webp_path, sha256_path)
-        """
-        key = cls._url_to_cache_key(url)
-        base = os.path.join(cls._get_disk_cache_dir(), key)
-        return base + ".webp", base + ".sha256"
-
-    @classmethod
-    def _sha256_bytes(cls, b: bytes) -> str:
-        h = hashlib.sha256()
-        h.update(b)
-        return h.hexdigest()
-
-    @classmethod
-    def _sha256_file(cls, path: str) -> str:
-        h = hashlib.sha256()
-        with open(path, "rb") as f:
-            for chunk in iter(lambda: f.read(1024 * 1024), b""):
-                h.update(chunk)
-        return h.hexdigest()
-
-    @classmethod
-    def _get_url_lock(cls, cache_key: str) -> threading.Lock:
-        with cls._url_locks_guard:
-            lk = cls._url_locks.get(cache_key)
-            if lk is None:
-                lk = threading.Lock()
-                cls._url_locks[cache_key] = lk
-            return lk
-
-    @classmethod
-    def _estimate_tensor_bytes(cls, t: torch.Tensor) -> int:
-        # float32: 4 bytes/elem；但别假设 dtype，直接用 element_size 更稳
-        return int(t.numel() * t.element_size())
-
-    @classmethod
-    def _lru_put_tensor(cls, key: str, tensor: torch.Tensor) -> None:
-        """
-        写入内存 LRU，并执行驱逐，严格限制 items + bytes。
-        """
-        if key in cls._tensor_lru:
-            old = cls._tensor_lru.pop(key)
-            cls._tensor_lru_bytes -= cls._estimate_tensor_bytes(old)
-
-        cls._tensor_lru[key] = tensor
-        cls._tensor_lru.move_to_end(key, last=True)
-        cls._tensor_lru_bytes += cls._estimate_tensor_bytes(tensor)
-
-        # 驱逐：先按 items，再按 bytes（两者都满足）
-        while len(cls._tensor_lru) > cls._MAX_MEM_CACHE_ITEMS or cls._tensor_lru_bytes > cls._MAX_MEM_CACHE_BYTES:
-            k, v = cls._tensor_lru.popitem(last=False)
-            cls._tensor_lru_bytes -= cls._estimate_tensor_bytes(v)
-
-    @classmethod
-    def _lru_get_tensor(cls, key: str) -> Optional[torch.Tensor]:
-        t = cls._tensor_lru.get(key)
-        if t is None:
-            return None
-        cls._tensor_lru.move_to_end(key, last=True)
-        return t
-
-    @classmethod
-    def _load_tensor_from_disk_webp(cls, webp_path: str) -> Optional[torch.Tensor]:
-        if not os.path.exists(webp_path):
-            return None
-        try:
-            img = Image.open(webp_path)
-            # 确保真正解码，避免只读到 header
-            img.load()
-            return cls._pil_to_comfy_tensor(img, max_side=512)
-        except Exception as e:
-            print(f"❌ 硬盘缓存图片损坏/无法解码，删除并回退: {e}")
-            try:
-                os.remove(webp_path)
-            except Exception:
-                pass
-            return None
-
-    @classmethod
-    def _write_file_atomic(cls, final_path: str, data: bytes) -> None:
-        """
-        原子写入：先写 tmp，再 replace。
-        Windows/Linux 都相对安全。
-        """
-        d = os.path.dirname(final_path)
-        os.makedirs(d, exist_ok=True)
-        fd, tmp_path = tempfile.mkstemp(prefix=".tmp_", dir=d)
-        try:
-            with os.fdopen(fd, "wb") as f:
-                f.write(data)
-            os.replace(tmp_path, final_path)
-        finally:
-            try:
-                if os.path.exists(tmp_path):
-                    os.remove(tmp_path)
-            except Exception:
-                pass
-    
-    @classmethod
     def download_and_cache_image(cls, icon_url: str) -> torch.Tensor:
-        """
-        1) 内存 LRU（限制 items/bytes）
-        2) 硬盘 webp 持久化 + sha256 校验
-        3) 下载限制最大字节 + stream + UA headers
-        """
+        """下载图片并缓存为 ComfyUI IMAGE tensor"""
         if not icon_url or str(icon_url).strip() == "":
             return cls.create_placeholder_image()
 
         url = str(icon_url).strip()
-        if not (url.startswith("http://") or url.startswith("https://")):
-            print(f"⚠️ 非 http/https 的 icon_url，拒绝: {url}")
+        cache_key = hashlib.md5(url.encode("utf-8")).hexdigest()
+
+        if cache_key in cls._image_cache:
+            return cls._image_cache[cache_key]
+
+        try:
+            resp = requests.get(url, timeout=10)
+            resp.raise_for_status()
+            img = Image.open(BytesIO(resp.content))
+            tensor = cls._pil_to_comfy_tensor(img, max_side=512)
+            cls._image_cache[cache_key] = tensor
+            return tensor
+
+        except Exception as e:
+            print(f"❌ 下载/处理图片失败: {e}")
             return cls.create_placeholder_image()
-
-        cache_key = cls._url_to_cache_key(url)
-
-        # 先查内存 LRU
-        t = cls._lru_get_tensor(cache_key)
-        if t is not None:
-            return t
-
-        webp_path, sha_path = cls._cache_paths_for_url(url)
-
-        # 并发保护：同一 URL 同时只允许一个线程/协程下载/落盘
-        lock = cls._get_url_lock(cache_key)
-        with lock:
-            # 进锁后再查一次内存（可能其它线程已填充）
-            t = cls._lru_get_tensor(cache_key)
-            if t is not None:
-                return t
-
-            # 查硬盘缓存 + 校验 sha256
-            if os.path.exists(webp_path) and os.path.exists(sha_path):
-                try:
-                    with open(sha_path, "r", encoding="utf-8") as f:
-                        expected = f.read().strip()
-                    actual = cls._sha256_file(webp_path)
-                    if expected and expected == actual:
-                        t = cls._load_tensor_from_disk_webp(webp_path)
-                        if t is not None:
-                            cls._lru_put_tensor(cache_key, t)
-                            return t
-                    else:
-                        print("⚠️ 硬盘缓存 sha256 不匹配，删除后重新下载")
-                        try:
-                            os.remove(webp_path)
-                        except Exception:
-                            pass
-                        try:
-                            os.remove(sha_path)
-                        except Exception:
-                            pass
-                except Exception as e:
-                    print(f"⚠️ 校验硬盘缓存失败，删除后重新下载: {e}")
-                    try:
-                        os.remove(webp_path)
-                    except Exception:
-                        pass
-                    try:
-                        os.remove(sha_path)
-                    except Exception:
-                        pass
-
-            # 下载（stream + 限制大小）
-            try:
-                resp = requests.get(
-                    url,
-                    headers=cls._request_headers,
-                    stream=True,
-                    timeout=(5, 15),  # 连接超时/读取超时
-                    allow_redirects=True,
-                )
-                resp.raise_for_status()
-
-                # 如果 server 给了 Content-Length，先做一次硬限制
-                cl = resp.headers.get("Content-Length", "")
-                if cl.isdigit():
-                    if int(cl) > cls._MAX_DOWNLOAD_BYTES:
-                        raise ValueError(f"Content-Length={cl} 超过上限 {cls._MAX_DOWNLOAD_BYTES} bytes")
-
-                content_type = (resp.headers.get("Content-Type") or "").lower()
-                if content_type and ("image" not in content_type):
-                    # 有些站不标准，这里只做轻提示，不强杀也行；你想更严可以直接 raise
-                    print(f"⚠️ Content-Type 看起来不是图片: {content_type}")
-
-                buf = BytesIO()
-                downloaded = 0
-                for chunk in resp.iter_content(chunk_size=64 * 1024):
-                    if not chunk:
-                        continue
-                    downloaded += len(chunk)
-                    if downloaded > cls._MAX_DOWNLOAD_BYTES:
-                        raise ValueError(f"下载大小超过上限 {cls._MAX_DOWNLOAD_BYTES} bytes")
-                    buf.write(chunk)
-
-                raw = buf.getvalue()
-                if not raw:
-                    raise ValueError("下载内容为空")
-
-                # 解码图片（防止坏数据）
-                img = Image.open(BytesIO(raw))
-                img.load()  # 强制解码
-
-                # 转成 webp 持久化（如果环境 Pillow 没编 WebP，这里会报错）
-                # 先限制尺寸再存盘，避免超大图占用空间/解码慢
-                if img.mode != "RGB":
-                    img = img.convert("RGB")
-                if max(img.size) > 1024:
-                    img.thumbnail((1024, 1024), Image.LANCZOS)
-
-                out_buf = BytesIO()
-                try:
-                    img.save(out_buf, format="WEBP", quality=90, method=6)
-                    webp_bytes = out_buf.getvalue()
-                    sha256 = cls._sha256_bytes(webp_bytes)
-
-                    cls._write_file_atomic(webp_path, webp_bytes)
-                    cls._write_file_atomic(sha_path, (sha256 + "\n").encode("utf-8"))
-                except Exception as e:
-                    # WebP 不可用时：回退为“只走内存 tensor”，不持久化（或你也可改成 PNG 持久化）
-                    print(f"⚠️ 保存 WEBP 失败（可能 Pillow 未启用 WebP），将只走内存缓存: {e}")
-
-                # 最终转 tensor（按你原逻辑限制 512）
-                tensor = cls._pil_to_comfy_tensor(img, max_side=512)
-                cls._lru_put_tensor(cache_key, tensor)
-                return tensor
-
-            except Exception as e:
-                print(f"❌ 下载/处理图片失败: {e}")
-                return cls.create_placeholder_image()
-    
-    # @classmethod
-    # def download_and_cache_image(cls, icon_url: str) -> torch.Tensor:
-    #     """下载图片并缓存为 ComfyUI IMAGE tensor"""
-    #     if not icon_url or str(icon_url).strip() == "":
-    #         return cls.create_placeholder_image()
-
-    #     url = str(icon_url).strip()
-    #     cache_key = hashlib.md5(url.encode("utf-8")).hexdigest()
-
-    #     if cache_key in cls._image_cache:
-    #         return cls._image_cache[cache_key]
-
-    #     try:
-    #         resp = requests.get(url, timeout=10)
-    #         resp.raise_for_status()
-    #         img = Image.open(BytesIO(resp.content))
-    #         tensor = cls._pil_to_comfy_tensor(img, max_side=512)
-    #         cls._image_cache[cache_key] = tensor
-    #         return tensor
-
-    #     except Exception as e:
-    #         print(f"❌ 下载/处理图片失败: {e}")
-    #         return cls.create_placeholder_image()
 
     @classmethod
     def INPUT_TYPES(cls):
