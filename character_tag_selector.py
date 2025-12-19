@@ -13,6 +13,7 @@ import json
 import hashlib
 from io import BytesIO
 from typing import Dict, List, Tuple, Optional
+import folder_paths
 
 import numpy as np
 import requests
@@ -252,11 +253,10 @@ class CharacterTagSelector:
     @classmethod
     def _get_disk_cache_dir(cls) -> str:
         """
-        图片硬盘缓存目录：<node>/web/cache/character_tag_selector
-        放在 web 下便于你调试查看；也可以换到更合适的位置。
+        图片硬盘缓存目录
         """
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        d = os.path.join(current_dir, "web", "cache", "character_tag_selector")
+        # current_dir = os.path.dirname(os.path.abspath(__file__))
+        d = os.path.join(folder_paths.get_temp_directory(), "character_tag_selector")
         os.makedirs(d, exist_ok=True)
         return d
 

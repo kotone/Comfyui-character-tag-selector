@@ -212,16 +212,9 @@ app.registerExtension({
             //     }
             //     ctx.restore();
             // };
-            function buildPreviewSrc(iconUrl) {
-                const url = String(iconUrl ?? "").trim();
-                if (!url) return "";
-                const u = new URL("/character_tag_selector/icon", window.location.origin);
-                u.searchParams.set("url", url);
-                return u.toString();
-            }
 
             const updateImage = (iconUrl) => {
-                const url = buildPreviewSrc(iconUrl) || String(iconUrl ?? "").trim();
+                const url = String(iconUrl ?? "").trim();
                 if (!url) {
                     img.src = "";
                     statusText = "该角色无预览图";
